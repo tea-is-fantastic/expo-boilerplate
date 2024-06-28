@@ -1,0 +1,74 @@
+name: Setup React Native App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  APP_NAME: my-app
+
+jobs:
+  create-rn-app:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Cleanup
+      run: |
+        find . -mindepth 1 -maxdepth 1 -not -name '.github' -exec rm -rf {} +
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20' # Use the version of Node.js you prefer
+
+    - name: Install bun
+      run: npm install -g bun
+      
+    - name: Create React Native app
+      run: bun create expo ${{ env.APP_NAME }}
+
+    - name: Move app to root
+      run: |
+        shopt -s dotglob
+        mv ${{ env.APP_NAME }}/* .
+        rmdir ${{ env.APP_NAME }}
+
+    - name: Install deps
+      run: |
+        bun install nativewind react-native-onesignal
+
+    - name: Install devdeps
+      run: |
+        bun install -d tailwindcss@3.3.2
+
+    - name: Install expodeps
+      run: |
+        bunx expo install react-dom react-native-web @expo/metro-runtime react-native-webview
+        bunx expo install react-native-svg expo-linking expo-video @shopify/flash-list
+        bunx expo install react-native-safe-area-context @react-native-async-storage/async-storage
+        bunx expo install expo-localization expo-navigation-bar react-native-screens
+
+    - name: Setup tailwind
+      run: |
+        npx tailwindcss init
+        npx @tisf/regex https://raw.githubusercontent.com/tea-is-fantastic/expo-boilerplate/main/.tea/cache/1929519702-babel-config.yml
+        npx @tisf/regex https://raw.githubusercontent.com/tea-is-fantastic/expo-boilerplate/main/.tea/cache/2003851172-tailwind-config.yml
+
+    - name: Commit changes
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        rm -rf .git && git init && git branch -m main && git add .
+        git commit -m 'Set up React Native app with create-expo-app'
+
+    - name: Push changes
+      uses: ad-m/github-push-action@v0.6.0
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: main
+        force: true

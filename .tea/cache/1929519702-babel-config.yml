@@ -1,0 +1,12 @@
+type: regex
+path:
+  - {{dirs.src}}
+  - babel.config.js
+data:
+  - find: |
+      /(presets)(.*?)(\],)/s
+    replace: |
+      $1$2$3
+          plugins: ["nativewind/babel"],
+    already: |
+      nativewind/babel
